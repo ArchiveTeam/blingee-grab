@@ -39,7 +39,8 @@ wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_pars
   elseif string.match(url, "http://blingee%.com/javascripts/") or
     string.match(url, "http://blingee%.com/stylesheets/") or
     string.match(url, "http://blingee%.com/images/web_ui/") or 
-    string.match(url, "http://blingee%.com/favicon%.gif") then
+    string.match(url, "http://blingee%.com/favicon%.gif") or
+    string.match(url, "http://blingee%.com/images/spaceball%.gif") then
     return false
 
   else
@@ -83,6 +84,17 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
         end
       end
     end
+
+  -- Stamps
+  elseif string.match(url, "blingee%.com/stamp/view/") then
+    html = read_file(file)
+    local root = htmlparser.parse(html)
+    local elements = root("div[class='bigbox'] img")
+    for _,e in ipairs(elements) do
+      newurl = string.match(e.attributes["style"], "http://[^%)]+")
+      table.insert(urls, { url=newurl })
+      addedtolist[newurl] = true
+      end
   end
   return urls
 end

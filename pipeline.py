@@ -193,11 +193,13 @@ class WgetArgs(object):
         item['item_type'] = item_type
         item['item_value'] = item_value
         
-        assert item_type in ('blingee')
+        assert item_type in ('blingee', 'stamp')
 
         if item_type == 'blingee':
             wget_args.append("http://blingee.com/blingee/view/{0}".format(item_value))
             wget_args.append("http://blingee.com/blingee/{0}/comments".format(item_value))
+        elif item_type == 'stamp':
+            wget_args.append("http://blingee.com/stamp/view/{0}".format(item_value))
         else:
             raise Exception('Unknown item')
         
