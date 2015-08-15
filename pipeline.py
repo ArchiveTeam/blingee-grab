@@ -62,6 +62,8 @@ USER_AGENT = 'ArchiveTeam'
 TRACKER_ID = 'blingee'
 #TRACKER_HOST = 'tracker.archiveteam.org'
 TRACKER_HOST = 'localhost:9080'
+# Number of blingees per item
+NUM_BLINGEES = 100
 
 ###########################################################################
 # This section defines project-specific tasks.
@@ -201,8 +203,9 @@ class WgetArgs(object):
                              'badge')
 
         if item_type == 'blingee':
-            wget_args.append("http://blingee.com/blingee/view/{0}".format(item_value))
-            wget_args.append("http://blingee.com/blingee/{0}/comments".format(item_value))
+            for val in xrange(int(item_value), int(item_value)+NUM_BLINGEES):
+                wget_args.append("http://blingee.com/blingee/view/{0}".format(val))
+                wget_args.append("http://blingee.com/blingee/{0}/comments".format(val))
         elif item_type == 'stamp':
             wget_args.append("http://blingee.com/stamp/view/{0}".format(item_value))
         elif item_type == 'group':
@@ -231,7 +234,7 @@ class WgetArgs(object):
             wget_args.extend(['--bind-address', globals()['bind_address']])
             print('')
             print('*** Wget will bind address at {0} ***'.format(
-                globals()['bind_address']))
+                  globals()['bind_address']))
             print('')
 
         return realize(wget_args, item)

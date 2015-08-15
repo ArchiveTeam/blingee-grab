@@ -109,7 +109,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     if elements[#elements] then
       local partial_url = elements[#elements].attributes["href"]
       local total_num = string.match(partial_url, "%d+$")
-      if total_num then
+      if total_num and string.match(partial_url, "page=%d+") then
         for num=2,total_num do
           newurl = url .. "?page=" .. num
           check(newurl)
@@ -140,7 +140,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     if elements[#elements] then
       local partial_url = elements[#elements].attributes["href"]
       local total_num = string.match(partial_url, "%d+$")
-      if total_num then
+      if total_num and string.match(partial_url, "page/%d+") then
         for num=2,total_num do
           newurl = url .. "/page/" .. num
           check(newurl)
@@ -154,7 +154,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     if elements[#elements] then
       local partial_url = elements[#elements].attributes["href"]
       local total_num = string.match(partial_url, "%d+$")
-      if total_num then
+      if total_num and string.match(partial_url, "page=%d+") then
         for num=2,total_num do
           newurl = url .. "?page=" .. num
           check(newurl)
