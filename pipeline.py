@@ -76,7 +76,7 @@ class CheckIP(SimpleTask):
 
     def process(self, item):
         # NEW for 2014! Check if we are behind firewall/proxy
-
+        return True #FIXME
         if self._counter <= 0:
             item.log_output('Checking IP address.')
             ip_set = set()
@@ -193,13 +193,23 @@ class WgetArgs(object):
         item['item_type'] = item_type
         item['item_value'] = item_value
         
-        assert item_type in ('blingee', 'stamp')
+        assert item_type in ('blingee', 'stamp', 'group')
 
         if item_type == 'blingee':
             wget_args.append("http://blingee.com/blingee/view/{0}".format(item_value))
             wget_args.append("http://blingee.com/blingee/{0}/comments".format(item_value))
         elif item_type == 'stamp':
             wget_args.append("http://blingee.com/stamp/view/{0}".format(item_value))
+        elif item_type == 'group':
+            wget_args.extend(["--recursive", "--level=inf"])
+            # AFAICT, host*-static only hosts the spotlight blingees;
+            # however, I've only looked at groups.
+            wget_args.append("--exclude-domains=" + "host1-static.blingee.com," +
+                                                    "host2-static.blingee.com," +
+                                                    "host3-static.blingee.com," +
+                                                    "host4-static.blingee.com")
+            wget_args.append("http://blingee.com/group/{0}".format(item_value))
+            wget_args.append("http://blingee.com/group/{0}/members".format(item_value))
         else:
             raise Exception('Unknown item')
         
