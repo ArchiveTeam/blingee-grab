@@ -228,7 +228,7 @@ pipeline = Pipeline(
     CheckIP(),
     GetItemFromTracker("http://%s/%s" % (TRACKER_HOST, TRACKER_ID), downloader,
         VERSION),
-    PrepareDirectories(warc_prefix="blip"),
+    PrepareDirectories(warc_prefix="blingee"),
     WgetDownload(
         WgetArgs(),
         max_tries=2,

@@ -22,19 +22,15 @@ read_file = function(file)
   end
 end
 
-io.stdout:write("Started!\n")
-io.stdout:flush()
-
 wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_parsed, iri, verdict, reason)
   local url = urlpos["url"]["url"]
   local html = urlpos["link_expect_html"]
-  
+
   if downloaded[url] == true or addedtolist[url] == true then
     return false
-  end
-  
+
   -- No ads
-  if string.match(url, "https?://partner%.googleadservices%.com") or
+  elseif string.match(url, "https?://partner%.googleadservices%.com") or
     string.match(url, "http://.+%.scorecardresearch%.com") or
     string.match(url, "http://.+%.quantserve%.com") then
     return false
@@ -89,12 +85,6 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
     else
       downloaded[url.url] = true
     end
-  end
-
-  -- Deleted or private item
-  if string.match(url["url"], "http://blingee%.com/account/login") or
-     string.match(url["url"], "http://blingee%.com/$") then
-    return wget.actions.NOTHING
 
   elseif status_code >= 500 or
     (status_code >= 400 and status_code ~= 404) then
