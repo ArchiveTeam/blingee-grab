@@ -182,8 +182,8 @@ class WgetArgs(object):
             "--waitretry", "30",
             "--warc-file", ItemInterpolation("%(item_dir)s/%(warc_file_base)s"),
             "--warc-header", "operator: Archive Team",
-            "--warc-header", "blip-dld-script-version: " + VERSION,
-            "--warc-header", ItemInterpolation("blingee: %(item_name)s"), # FIXME
+            "--warc-header", "blingee-dld-script-version: " + VERSION,
+            "--warc-header", ItemInterpolation("blingee: %(item_name)s")
         ]
         
         item_name = item['item_name']
@@ -197,6 +197,7 @@ class WgetArgs(object):
 
         if item_type == 'blingee':
             wget_args.append("http://blingee.com/blingee/view/{0}".format(item_value))
+            wget_args.append("http://blingee.com/blingee/{0}/comments".format(item_value))
         else:
             raise Exception('Unknown item')
         

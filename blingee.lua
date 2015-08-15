@@ -52,7 +52,8 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
   local urls = {}
   local html = nil
   
-  if string.match(url, item_value) or string.match(url, "blingee%.com/blingee/view/") then
+  -- Blingees
+  if string.match(url, "blingee%.com/blingee/view/") then
     html = read_file(file)
     local root = htmlparser.parse(html)
     -- The way blingee stores images is odd. A lot of the thumbnails
@@ -64,6 +65,24 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       table.insert(urls, { url=newurl })
       addedtolist[newurl] = true
       end
+
+  -- Blingee comments
+  elseif string.match(url, "blingee%.com/blingee/%d+/comments$") then
+    html = read_file(file)
+    local root = htmlparser.parse(html)
+    local elements = root("div[class='li2center'] div a")
+    -- The very last url has the number of total comment pages
+    if elements[#elements] then
+      local partial_url = elements[#elements].attributes["href"]
+      local total_num = string.match(partial_url, "%d+$")
+      if total_num then
+        for num=2,total_num do
+          newurl = url .. "?page=" .. num
+          table.insert(urls, { url=newurl })
+          addedtolist[newurl] = true
+        end
+      end
+    end
   end
   return urls
 end
