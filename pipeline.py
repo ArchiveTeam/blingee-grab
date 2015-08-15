@@ -193,7 +193,7 @@ class WgetArgs(object):
         item['item_type'] = item_type
         item['item_value'] = item_value
         
-        assert item_type in ('blingee', 'stamp', 'group', 'competition')
+        assert item_type in ('blingee', 'stamp', 'group', 'competition', 'challenge')
 
         if item_type == 'blingee':
             wget_args.append("http://blingee.com/blingee/view/{0}".format(item_value))
@@ -213,6 +213,9 @@ class WgetArgs(object):
         elif item_type == 'competition':
             wget_args.append("http://blingee.com/competition/view/{0}".format(item_value))
             wget_args.append("http://blingee.com/competition/rankings/{0}".format(item_value))
+        elif item_type == 'challenge':
+            wget_args.append("http://blingee.com/challenge/view/{0}".format(item_value))
+            wget_args.append("http://blingee.com/challenge/rankings/{0}".format(item_value))
         else:
             raise Exception('Unknown item')
         

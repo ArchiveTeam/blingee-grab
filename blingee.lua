@@ -144,6 +144,20 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
         end
       end
     end
+
+  -- Challenge rankings
+  elseif string.match(url, "blingee%.com/challenge/rankings/%d+$") then
+    local elements = parse_html(file, "div[class='content_section'] a")
+    if elements[#elements] then
+      local partial_url = elements[#elements].attributes["href"]
+      local total_num = string.match(partial_url, "%d+$")
+      if total_num then
+        for num=2,total_num do
+          newurl = url .. "?page=" .. num
+          check(newurl)
+        end
+      end
+    end
   end
 
   return urls
