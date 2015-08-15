@@ -185,15 +185,20 @@ class WgetArgs(object):
             "--warc-header", "blingee-dld-script-version: " + VERSION,
             "--warc-header", ItemInterpolation("blingee: %(item_name)s")
         ]
-        
+
         item_name = item['item_name']
         assert ':' in item_name
         item_type, item_value = item_name.split(':', 1)
-        
+
         item['item_type'] = item_type
         item['item_value'] = item_value
-        
-        assert item_type in ('blingee', 'stamp', 'group', 'competition', 'challenge')
+
+        assert item_type in ('blingee',
+                             'stamp',
+                             'group',
+                             'competition',
+                             'challenge',
+                             'badge')
 
         if item_type == 'blingee':
             wget_args.append("http://blingee.com/blingee/view/{0}".format(item_value))
@@ -216,16 +221,19 @@ class WgetArgs(object):
         elif item_type == 'challenge':
             wget_args.append("http://blingee.com/challenge/view/{0}".format(item_value))
             wget_args.append("http://blingee.com/challenge/rankings/{0}".format(item_value))
+        elif item_type == 'badge':
+            wget_args.append("http://blingee.com/badge/view/{0}".format(item_value))
+            wget_args.append("http://blingee.com/badge/winner_list/{0}".format(item_value))
         else:
             raise Exception('Unknown item')
-        
+
         if 'bind_address' in globals():
             wget_args.extend(['--bind-address', globals()['bind_address']])
             print('')
             print('*** Wget will bind address at {0} ***'.format(
                 globals()['bind_address']))
             print('')
-            
+
         return realize(wget_args, item)
 
 ###########################################################################

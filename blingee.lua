@@ -53,7 +53,9 @@ wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_pars
     return false
 
   -- Site stuff that is already saved elsewhere,
-  elseif string.match(url, "page=1$") or
+  elseif string.match(url, "blingee%.com/group/%d+/.+page=1$") or
+         (string.match(url, "blingee%.com/group/%d+[^%d]*") and not
+          string.match(url, item_value)) or
          string.match(url, "[%?&]list_type=409[78]") or
          string.match(url, "blingee%.com/group/%d+/member/") or
          string.match(url, "blingee%.com/group/%d+/blingees") or
@@ -66,6 +68,7 @@ wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_pars
          string.match(url, "/join$") or
          string.match(url, "/login$") or
          string.match(url, "/add_topic") or
+         string.match(url, "/add_post") or
          string.match(url, "blingee%.com/group/tags/") or
          string.match(url, "[%?&]lang=") then
     return false
@@ -155,6 +158,29 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
         for num=2,total_num do
           newurl = url .. "?page=" .. num
           check(newurl)
+        end
+      end
+    end
+
+  -- Badges
+  elseif string.match(url, "blingee%.com/badge/") then
+    -- Get the actual badge
+    if string.match(url, "/view/%d+$") then
+      local description = parse_html(file, "div[class='description'] p a img")
+      if description then
+        check("http:" .. description[1].attributes["src"])
+      end
+    -- Winner list
+    elseif string.match(url, "/winner_list/%d+$") then
+      local elements = parse_html(file, "div[class='pagination'] a")
+      if elements[#elements] then
+        local partial_url = elements[#elements].attributes["href"]
+        local total_num = string.match(partial_url, "%d+$")
+        if total_num then
+          for num=2,total_num do
+            newurl = url .. "?page=" .. num
+            check(newurl)
+          end
         end
       end
     end
