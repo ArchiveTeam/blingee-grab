@@ -33,6 +33,7 @@ wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_pars
   -- We do get the avatars from the memberlist as they are fullsize.
   if string.match(url, "%.gif[%?%d]*$") and
      (string.match(parent["url"], "blingee%.com/group/%d+$") or
+      string.match(parent["url"], "blingee%.com/group/%d+-") or
       string.match(parent["url"], "blingee%.com/group/%d+/managers") or
       string.match(parent["url"], "blingee%.com/group/%d+/topic")) then
     return false
@@ -54,7 +55,6 @@ wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_pars
   -- Site stuff that is already saved elsewhere,
   elseif string.match(url, "page=1$") or
          string.match(url, "[%?&]list_type=409[78]") or
-         string.match(url, "blingee%.com/group/%d+-") or
          string.match(url, "blingee%.com/group/%d+/member/") or
          string.match(url, "blingee%.com/group/%d+/blingees") or
          string.match(url, "blingee%.com/groups$") or
