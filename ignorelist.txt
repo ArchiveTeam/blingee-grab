@@ -18,5 +18,3 @@ http://blingee.com/images/web_ui/icon44_tumblr.gif?1341491498
 http://blingee.com/images/web_ui/icon44_pinterest.gif?1341491498
 http://blingee.com/images/web_ui/icon44_share1.gif?1341491498
 http://connect.facebook.net/en_US/all.js
-
- 

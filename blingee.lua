@@ -153,6 +153,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     -- but just in case
     elseif string.match(newurl, "%.swf") then
       return newurl
+    else
       return nil
     end
   end
