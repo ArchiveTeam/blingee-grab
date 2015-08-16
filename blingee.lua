@@ -79,8 +79,7 @@ check = function(url, parent, verdict)
     return false
 
   -- Site stuff that is already saved elsewhere,
-  elseif string.match(url, "bln%.gs/b/") or
-         string.match(url, "^https?://blingee%.com/$") or
+  elseif string.match(url, "^https?://blingee%.com/$") or
          string.match(url, "blingee%.com/about") or
          string.match(url, "blingee%.com/partner") or
          string.match(url, "blingee%.com/group/%d+/.+page=1$") or
@@ -325,30 +324,94 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
   -- NEW for 2014: Slightly more verbose messages because people keep
   -- complaining that it's not moving or not working
   local status_code = http_stat["statcode"]
-  local sleep_time = 15
   
   url_count = url_count + 1
   io.stdout:write(url_count .. "=" .. status_code .. " " .. url["url"] .. ".  \n")
   io.stdout:flush()
 
-  if status_code >= 500 or (status_code >= 400 and status_code ~= 404) or
-     status_code == 0 then
+  if status_code == 302 or status_code == 301 then
+    os.execute("python check302.py '"..url["url"].."'")
+    if io.open("302file", "r") == nil then
+      if string.match(url["url"], item_value) and string.match(url["host"], "blingee%.com") then
+        io.stdout:write("Something went wrong!! ABORTING  \n")
+        io.stdout:flush()
+        return wget.actions.ABORT
+      end
+    end
+    local redirfile = io.open("302file", "r")
+    local fullfile = redirfile:read("*all")
+    local numlinks = 0
+    for newurl in string.gmatch(fullfile, "https?://") do
+      numlinks = numlinks + 1
+    end
+    local foundurl = line_num(2, "302file")
+    if numlinks > 1 then
+--      io.stdout:write("Found "..foundurl.." after redirect")
+--      io.stdout:flush()
+      if downloaded[foundurl] == true or addedtolist[foundurl] == true then
+--        io.stdout:write(", this url has already been downloaded or added to the list to be downloaded, so it is skipped.  \n")
+--        io.stdout:flush()
+        redirfile:close()
+        os.remove("302file")
+        return wget.actions.EXIT
+      elseif not string.match(foundurl, "https?://") then
+        if string.match(url["url"], item_value) and string.match(url["host"], "blingee%.com") then
+          io.stdout:write("Something went wrong!! ABORTING  \n")
+          io.stdout:flush()
+          return wget.actions.ABORT
+        end
+      end
+      redirfile:close()
+      os.remove("302file")
+--      io.stdout:write(".  \n")
+--      io.stdout:flush()
+    end
+  end
+  
+  if status_code >= 500 or
+    (status_code >= 400 and status_code ~= 404 and status_code ~= 403) then
+
     io.stdout:write("\nServer returned "..http_stat.statcode..". Sleeping.\n")
     io.stdout:flush()
 
-    -- Note that wget has its own linear backoff to this time as well
-    os.execute("sleep " .. sleep_time)
-    return wget.actions.CONTINUE
-  else
-    downloaded[url.url] = true
-    -- We're okay; sleep a bit (if we have to) and continue
-    local sleep_time = 0 -- 1.0 * (math.random(75, 125) / 100.0)
+    os.execute("sleep 10")
 
-    if sleep_time > 0.1 then
-      os.execute("sleep " .. sleep_time)
+    tries = tries + 1
+
+    if tries >= 6 then
+      io.stdout:write("\nI give up...\n")
+      io.stdout:flush()
+      tries = 0
+      return wget.actions.ABORT
+    else
+      return wget.actions.CONTINUE
     end
+  elseif status_code == 0 then
 
-    tries = 0
-    return wget.actions.NOTHING
+    io.stdout:write("\nServer returned "..http_stat.statcode..". Sleeping.\n")
+    io.stdout:flush()
+
+    os.execute("sleep 10")
+    
+    tries = tries + 1
+
+    if tries >= 3 then
+      io.stdout:write("\nI give up...\n")
+      io.stdout:flush()
+      tries = 0
+      return wget.actions.ABORT
+    else
+      return wget.actions.CONTINUE
+    end
   end
+
+  tries = 0
+
+  local sleep_time = 0
+
+  if sleep_time > 0.001 then
+    os.execute("sleep " .. sleep_time)
+  end
+
+  return wget.actions.NOTHING
 end
