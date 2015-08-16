@@ -26,12 +26,26 @@ parse_html = function(file, selector)
   return root(selector)
 end
 
+downloaded['http://blingee.com/javascripts/all_min.js?1341491407'] = true
+downloaded['http://blingee.com/stylesheets/blingee_v2.css?1414542910'] = true
+downloaded['http://blingee.com/stylesheets/ratings.css?1341491499'] = true
+downloaded['http://blingee.com/images/web_ui/icon44_facebook.gif?1341491498'] = true
+downloaded['http://blingee.com/images/web_ui/icon44_myspace.gif?1341491498'] = true
+downloaded['http://blingee.com/images/web_ui/icon44_twitter.gif?1341491498'] = true
+downloaded['http://blingee.com/images/web_ui/icon44_tumblr.gif?1341491498'] = true
+downloaded['http://blingee.com/images/web_ui/icon44_pinterest.gif?1341491498'] = true
+downloaded['http://blingee.com/images/web_ui/icon44_share1.gif?1341491498'] = true
+
+
 wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_parsed, iri, verdict, reason)
   local url = urlpos["url"]["url"]
 
+  if downloaded[url] == true then
+    return false
+
   -- Skip avatars/thumbnails on group frontpage, topics, and managers.
   -- We do get the avatars from the memberlist as they are fullsize.
-  if string.match(url, "%.gif[%?%d]*$") and
+  elseif string.match(url, "%.gif[%?%d]*$") and
      (string.match(parent["url"], "blingee%.com/group/%d+$") or
       string.match(parent["url"], "blingee%.com/group/%d+-") or
       string.match(parent["url"], "blingee%.com/group/%d+/managers") or
@@ -44,10 +58,8 @@ wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_pars
     string.match(url, "http://.+%.quantserve%.com") then
     return false
 
-  -- No javascripts or stylesheets (they're already saved.)
-  elseif string.match(url, "http://blingee%.com/javascripts/") or
-    string.match(url, "http://blingee%.com/stylesheets/") or
-    string.match(url, "http://blingee%.com/images/web_ui/") or 
+  -- Ignore static stuff that has no timestamps.
+  elseif string.match(url, "http://blingee%.com/images/web_ui/[^%?]+$") or
     string.match(url, "http://blingee%.com/favicon%.gif") or
     string.match(url, "http://blingee%.com/images/spaceball%.gif") then
     return false
@@ -176,7 +188,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       if elements[#elements] then
         local partial_url = elements[#elements].attributes["href"]
         local total_num = string.match(partial_url, "%d+$")
-        if total_num then
+        if total_num and string.match(partial_url, "page=%d+") then
           for num=2,total_num do
             newurl = url .. "?page=" .. num
             check(newurl)
@@ -200,7 +212,8 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
   io.stdout:write(url_count .. "=" .. status_code .. " " .. url["url"] .. ".  \n")
   io.stdout:flush()
 
-  if status_code >= 500 or (status_code >= 400 and status_code ~= 404) then
+  if status_code >= 500 or (status_code >= 400 and status_code ~= 404) or
+     status_code == 0 then
     io.stdout:write("\nServer returned "..http_stat.statcode..". Sleeping.\n")
     io.stdout:flush()
 
