@@ -17,7 +17,25 @@ then
     CONFIGURE_SSL_OPT="--with-ssl=openssl"
   fi
 fi
+
+WGET_DOWNLOAD_URL="http://warriorhq.archiveteam.org/downloads/wget-lua/wget-1.14.lua.LATEST.tar.bz2"
+
+rm -rf get-wget-lua.tmp/
+mkdir -p get-wget-lua.tmp
+
 cd get-wget-lua.tmp
+
+if builtin type -p curl &>/dev/null
+then
+  curl -L $WGET_DOWNLOAD_URL | tar -xj --strip-components=1
+elif builtin type -p wget &>/dev/null
+then
+  wget --output-document=- $WGET_DOWNLOAD_URL | tar -xj --strip-components=1
+else
+  echo "You need Curl or Wget to download the source files."
+  exit 1
+fi
+
 if ./configure $CONFIGURE_SSL_OPT --disable-nls && make && src/wget -V | grep -q lua
 then
   cp src/wget ../wget-lua
