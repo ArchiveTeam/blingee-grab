@@ -15,6 +15,8 @@ import subprocess
 import sys
 import time
 import string
+import requests
+from lxml import etree
 
 import seesaw
 from seesaw.externalprocess import WgetDownload
@@ -222,11 +224,31 @@ class WgetArgs(object):
             wget_args.append("http://blingee.com/badge/view/{0}".format(item_value))
             wget_args.append("http://blingee.com/badge/winner_list/{0}".format(item_value))
         elif item_type == 'profile':
-            wget_args.append("http://blingee.com/profile/{0}".format(item_value))
-            wget_args.append("http://blingee.com/profile/{0}/statistics".format(item_value))
-            wget_args.append("http://blingee.com/profile/{0}/circle".format(item_value))
-            wget_args.append("http://blingee.com/profile/{0}/badges".format(item_value))
-            wget_args.append("http://blingee.com/profile/{0}/comments".format(item_value))
+            print("Getting username for ID {0}...".format(item_value))
+            sys.stdout.flush()
+            tries = 0
+            while tries < 6:
+                html = requests.get("http://blingee.com/badge/view/42/user/{0}".format(item_value))
+                if html.status_code == 200 and html.text:
+                    myparser = etree.HTMLParser(encoding="utf-8")
+                    tree = etree.HTML(html.text, parser=myparser)
+                    links = tree.xpath('//div[@id="badgeinfo"]//a/@href')
+                    username = [link for link in links if "/profile/" in link]
+                    if not username:
+                        print("Skipping deleted/private profile.")
+                        break
+                    else:
+                        username = username[0]
+                        wget_args.append("http://blingee.com{0}".format(username))
+                        wget_args.append("http://blingee.com{0}/statistics".format(username))
+                        wget_args.append("http://blingee.com{0}/circle".format(username))
+                        wget_args.append("http://blingee.com{0}/badges".format(username))
+                        wget_args.append("http://blingee.com{0}/comments".format(username))
+                        break
+                else:
+                    print("Got status code {0}, sleeping...".format(html.status_code))
+                    time.sleep(5)
+                    tries += 1
 
         else:
             raise Exception('Unknown item')
