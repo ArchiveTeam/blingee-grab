@@ -15,6 +15,8 @@ import subprocess
 import sys
 import time
 import string
+import requests
+from lxml import etree
 
 import seesaw
 from seesaw.externalprocess import WgetDownload
@@ -64,6 +66,8 @@ TRACKER_ID = 'blingee'
 TRACKER_HOST = 'localhost:9080'
 # Number of blingees per item
 NUM_BLINGEES = 100
+# Number of profiles per item
+NUM_PROFILES = 10
 
 ###########################################################################
 # This section defines project-specific tasks.
@@ -199,7 +203,8 @@ class WgetArgs(object):
                              'group',
                              'competition',
                              'challenge',
-                             'badge')
+                             'badge',
+                             'profile')
 
         if item_type == 'blingee':
             for val in xrange(int(item_value), int(item_value)+NUM_BLINGEES):
@@ -209,12 +214,6 @@ class WgetArgs(object):
             wget_args.append("http://blingee.com/stamp/view/{0}".format(item_value))
         elif item_type == 'group':
             wget_args.extend(["--recursive", "--level=inf"])
-            # AFAICT, host*-static only hosts the spotlight blingees;
-            # however, I've only looked at groups.
-            wget_args.append("--exclude-domains=" + "host1-static.blingee.com," +
-                                                    "host2-static.blingee.com," +
-                                                    "host3-static.blingee.com," +
-                                                    "host4-static.blingee.com")
             wget_args.append("http://blingee.com/group/{0}".format(item_value))
             wget_args.append("http://blingee.com/group/{0}/members".format(item_value))
         elif item_type == 'competition':
@@ -226,6 +225,37 @@ class WgetArgs(object):
         elif item_type == 'badge':
             wget_args.append("http://blingee.com/badge/view/{0}".format(item_value))
             wget_args.append("http://blingee.com/badge/winner_list/{0}".format(item_value))
+        elif item_type == 'profile':
+            for val in xrange(int(item_value), int(item_value)+NUM_PROFILES):
+                print("Getting username for ID {0}...".format(val))
+                sys.stdout.flush()
+                tries = 0
+                while tries < 50:
+                    html = requests.get("http://blingee.com/badge/view/42/user/{0}".format(val))
+                    if html.status_code == 200 and html.text:
+                        myparser = etree.HTMLParser(encoding="utf-8")
+                        tree = etree.HTML(html.text, parser=myparser)
+                        links = tree.xpath('//div[@id="badgeinfo"]//a/@href')
+                        username = [link for link in links if "/profile/" in link]
+                        if not username:
+                            print("Skipping deleted/private profile.")
+                            break
+                        else:
+                            username = username[0]
+                            wget_args.append("http://blingee.com{0}".format(username))
+                            wget_args.append("http://blingee.com{0}/statistics".format(username))
+                            wget_args.append("http://blingee.com{0}/circle".format(username))
+                            wget_args.append("http://blingee.com{0}/badges".format(username))
+                            wget_args.append("http://blingee.com{0}/comments".format(username))
+                            print("Username is {0}".format(username.replace("/profile/", "")))
+                            sys.stdout.flush()
+                            break
+                    else:
+                        print("Got status code {0}, sleeping...".format(html.status_code))
+                        sys.stdout.flush()
+                        time.sleep(5)
+                        tries += 1
+
         else:
             raise Exception('Unknown item')
 
