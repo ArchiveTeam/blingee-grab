@@ -78,7 +78,6 @@ class CheckIP(SimpleTask):
 
     def process(self, item):
         # NEW for 2014! Check if we are behind firewall/proxy
-        return True #FIXME
         if self._counter <= 0:
             item.log_output('Checking IP address.')
             ip_set = set()

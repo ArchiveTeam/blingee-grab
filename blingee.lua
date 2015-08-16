@@ -8,6 +8,7 @@ local item_type = os.getenv('item_type')
 local item_value = os.getenv('item_value')
 
 local downloaded = {}
+local todo = {}
 
 read_file = function(file)
   if file then
@@ -20,36 +21,49 @@ read_file = function(file)
   end
 end
 
-parse_html = function(file, selector)
-  local html = read_file(file)
+parse_html = function(html, selector)
   local root = htmlparser.parse(html)
   return root(selector)
 end
 
-downloaded['http://blingee.com/javascripts/all_min.js?1341491407'] = true
-downloaded['http://blingee.com/stylesheets/blingee_v2.css?1414542910'] = true
-downloaded['http://blingee.com/stylesheets/ratings.css?1341491499'] = true
-downloaded['http://blingee.com/images/web_ui/icon44_facebook.gif?1341491498'] = true
-downloaded['http://blingee.com/images/web_ui/icon44_myspace.gif?1341491498'] = true
-downloaded['http://blingee.com/images/web_ui/icon44_twitter.gif?1341491498'] = true
-downloaded['http://blingee.com/images/web_ui/icon44_tumblr.gif?1341491498'] = true
-downloaded['http://blingee.com/images/web_ui/icon44_pinterest.gif?1341491498'] = true
-downloaded['http://blingee.com/images/web_ui/icon44_share1.gif?1341491498'] = true
+is_resource = function(url)
+  local patterns = {"%.gif", "%.png", "%.jpe?g", "%.css", "%.js", "%.swf"}
+  for _,pattern in ipairs(patterns) do
+    if string.match(url, pattern) then
+      return true
+    end
+  end
+  return false
+end
 
+check = function(url, parent, verdict)
+  if downloaded[url] == true or todo[url] == true then
+    return false
 
-wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_parsed, iri, verdict, reason)
-  local url = urlpos["url"]["url"]
-
-  if downloaded[url] == true then
+  -- url should actually be a url.
+  elseif not string.match(url, "^https?://") then
     return false
 
   -- Skip avatars/thumbnails on group frontpage, topics, and managers.
   -- We do get the avatars from the memberlist as they are fullsize.
-  elseif string.match(url, "%.gif[%?%d]*$") and
+  elseif parent and string.match(url, "%.gif[%?%d]*$") and
      (string.match(parent["url"], "blingee%.com/group/%d+$") or
       string.match(parent["url"], "blingee%.com/group/%d+-") or
       string.match(parent["url"], "blingee%.com/group/%d+/managers") or
       string.match(parent["url"], "blingee%.com/group/%d+/topic")) then
+    return false
+
+  -- Groups: Skip other groups and, except for resources, only grab
+  -- urls that contain item_type.
+  elseif parent and ((string.match(url, "blingee%.com/group/%d+[^%d]*") and
+                      not string.match(url, item_value)) or
+                     (string.match(parent["url"], "/group/") and
+                      not is_resource(url) and
+                      not string.match(url, item_type))) then
+    return false
+
+  -- No need to redo badges as we're already grabbing them.
+  elseif string.match(url, "blingee%.com/images/badges/") and item_type ~= "badge" then
     return false
 
   -- No ads or trackers
@@ -65,41 +79,102 @@ wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_pars
     return false
 
   -- Site stuff that is already saved elsewhere,
-  elseif string.match(url, "blingee%.com/group/%d+/.+page=1$") or
-         (string.match(url, "blingee%.com/group/%d+[^%d]*") and not
-          string.match(url, item_value)) or
+  elseif string.match(url, "bln%.gs/b/") or
+         string.match(url, "^https?://blingee%.com/$") or
+         string.match(url, "blingee%.com/about") or
+         string.match(url, "blingee%.com/group/%d+/.+page=1$") or
          string.match(url, "[%?&]list_type=409[78]") or
          string.match(url, "blingee%.com/group/%d+/member/") or
          string.match(url, "blingee%.com/group/%d+/blingees") or
          string.match(url, "blingee%.com/groups$") or
+         (string.match(url, "host%d+-static%.blingee%.com") and item_type == "group") or
          string.match(url, "%?offset=%d+") then
     return false
 
   -- ... requires a login, or makes wget go nuts.
-  elseif string.match(url, "/choose_blingee$") or
+  elseif string.match(url, "blingee%.com/images/web_ui/default_deleted_avatar%.gif%?1341491498") or
+         string.match(url, "blingee%.com/images/web_ui/default_avatar%.gif%?1341491498") or
+         string.match(url, "/choose_blingee$") or
+         string.match(url, "/choose_spotlight$") or
+         string.match(url, "/upload_base$") or
          string.match(url, "/join$") or
+         string.match(url, "/signup$") or
          string.match(url, "/login$") or
+         string.match(url, "blingee%.com/goodie_bag") or
          string.match(url, "/add_topic") or
          string.match(url, "/add_post") or
          string.match(url, "blingee%.com/group/tags/") or
          string.match(url, "[%?&]lang=") then
     return false
-
-  else
-    downloaded[url] = verdict
-    return verdict
   end
+  return verdict or true
+end
+
+-- Ignore urls that are already saved.
+for url in string.gmatch(read_file("ignorelist.txt"), "[^\n]+") do
+  downloaded[url] = true
+end
+
+
+wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_parsed, iri, verdict, reason)
+  local url = urlpos["url"]["url"]
+  passed = check(url, parent, verdict)
+  if passed then
+    todo[url] = true
+  end
+  return passed
 end
 
 
 wget.callbacks.get_urls = function(file, url, is_css, iri)
   local urls = {}
-  local html = nil
+  local html = read_file(file)
 
-  check = function(newurl)
-    if downloaded[newurl] ~= true then
-      table.insert(urls, { url=newurl })
-      downloaded[newurl] = true
+  if downloaded[url] ~= true then
+    downloaded[url] = true
+  end
+
+  -- Check url and, if valid and not downloaded, insert into urls.
+  insert = function(newurl)
+      if newurl ~= nil and check(newurl) and todo[newurl] ~= true
+         and downloaded[newurl] ~= true then
+        table.insert(urls, { url=newurl })
+        todo[newurl] = true
+      end
+  end
+
+  -- Check url for possible matches.
+  -- If matched, returns newurl. Else, nil
+  match_url = function(newurl)
+    -- Get extra, possibly new css/js.
+    if string.match(newurl, "%.css") or string.match(newurl, "%.js") then
+      return newurl
+    -- I don't think there are any swfs other than for stamps,
+    -- but just in case
+    elseif string.match(newurl, "%.swf") then
+      return newurl
+      return nil
+    end
+  end
+
+  -- Find various common links.
+  for newurl in string.gmatch(html, '"(https?://[^"]+)"') do
+    insert(match_url(newurl))
+  end
+
+  for newurl in string.gmatch(html, '("/[^"]+)"') do
+    if string.match(newurl, '"//') then
+      insert(match_url(string.gsub(newurl, '"//', 'http://')))
+    elseif not string.match(newurl, '"//') then
+      insert(match_url(string.match(url, "(https?://[^/]+)/")..string.match(newurl, '"(/.+)')))
+    end
+  end
+
+  for newurl in string.gmatch(html, "('/[^']+)'") do
+    if string.match(newurl, "'//") then
+      insert(match_url(string.gsub(newurl, "'//", "http://")))
+    elseif not string.match(newurl, "'//") then
+      insert(match_url(string.match(url, "(https?://[^/]+)/")..string.match(newurl, "'(/.+)")))
     end
   end
 
@@ -108,15 +183,15 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     -- The way Blingee stores images is odd. A lot of the thumbnails
     -- have very similar urls to the actual image.
     -- This selector gets just the main image, which is in the bigbox div.
-    local elements = parse_html(file, "div[class='bigbox'] img")
+    local elements = parse_html(html, "div[class='bigbox'] img")
     for _,e in ipairs(elements) do
       newurl = e.attributes["src"]
-      check(newurl)
+      insert(newurl)
     end
 
   -- Blingee comments
   elseif string.match(url, "blingee%.com/blingee/%d+/comments$") then
-    local elements = parse_html(file, "div[class='li2center'] div a")
+    local elements = parse_html(html, "div[class='li2center'] div a")
     -- The very last url has the total number of comment pages
     if elements[#elements] then
       local partial_url = elements[#elements].attributes["href"]
@@ -124,52 +199,52 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       if total_num and string.match(partial_url, "page=%d+") then
         for num=2,total_num do
           newurl = url .. "?page=" .. num
-          check(newurl)
+          insert(newurl)
         end
       end
     end
 
   -- Stamps
   elseif string.match(url, "blingee%.com/stamp/view/") then
-    local elements = parse_html(file, "div[class='bigbox'] img")
+    local elements = parse_html(html, "div[class='bigbox'] img")
     for _,e in ipairs(elements) do
       newurl = string.match(e.attributes["style"], "http://[^%)]+")
-      check(newurl)
+      insert(newurl)
     end
 
   -- Group urls are found via the --recursive wget flag,
   -- but we do have to add the group logo.
   elseif string.match(url, "blingee%.com/group/%d+$") then
-    local elements = parse_html(file, "div[class='bigbox'] img")
+    local elements = parse_html(html, "div[class='bigbox'] img")
     for _,e in ipairs(elements) do
       newurl = e.attributes["src"]
-      check(newurl)
+      insert(newurl)
     end
 
   -- Competition rankings
   elseif string.match(url, "blingee%.com/competition/rankings/%d+$") then
-    local elements = parse_html(file, "div[class='content_section'] a")
+    local elements = parse_html(html, "div[class='content_section'] a")
     if elements[#elements] then
       local partial_url = elements[#elements].attributes["href"]
       local total_num = string.match(partial_url, "%d+$")
       if total_num and string.match(partial_url, "page/%d+") then
         for num=2,total_num do
           newurl = url .. "/page/" .. num
-          check(newurl)
+          insert(newurl)
         end
       end
     end
 
   -- Challenge rankings
   elseif string.match(url, "blingee%.com/challenge/rankings/%d+$") then
-    local elements = parse_html(file, "div[class='content_section'] a")
+    local elements = parse_html(html, "div[class='content_section'] a")
     if elements[#elements] then
       local partial_url = elements[#elements].attributes["href"]
       local total_num = string.match(partial_url, "%d+$")
       if total_num and string.match(partial_url, "page=%d+") then
         for num=2,total_num do
           newurl = url .. "?page=" .. num
-          check(newurl)
+          insert(newurl)
         end
       end
     end
@@ -178,20 +253,20 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
   elseif string.match(url, "blingee%.com/badge/") then
     -- Get the actual badge
     if string.match(url, "/view/%d+$") then
-      local description = parse_html(file, "div[class='description'] p a img")
+      local description = parse_html(html, "div[class='description'] p a img")
       if description then
-        check("http:" .. description[1].attributes["src"])
+        insert("http:" .. description[1].attributes["src"])
       end
     -- Winner list
     elseif string.match(url, "/winner_list/%d+$") then
-      local elements = parse_html(file, "div[class='pagination'] a")
+      local elements = parse_html(html, "div[class='pagination'] a")
       if elements[#elements] then
         local partial_url = elements[#elements].attributes["href"]
         local total_num = string.match(partial_url, "%d+$")
         if total_num and string.match(partial_url, "page=%d+") then
           for num=2,total_num do
             newurl = url .. "?page=" .. num
-            check(newurl)
+            insert(newurl)
           end
         end
       end
@@ -221,6 +296,7 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
     os.execute("sleep " .. sleep_time)
     return wget.actions.CONTINUE
   else
+    downloaded[url.url] = true
     -- We're okay; sleep a bit (if we have to) and continue
     local sleep_time = 0 -- 1.0 * (math.random(75, 125) / 100.0)
 
