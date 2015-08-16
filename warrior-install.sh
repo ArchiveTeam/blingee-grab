@@ -12,7 +12,7 @@ then
    --with-lua-include=/usr/include/lua5.2 --versioned-rocks-dir --force-config
   make build
   sudo make install
-  sudo luarocks install htmlparser
+  sudo luarocks-5.2 install htmlparser
 fi
 if ! dpkg-query -Wf'${Status}' python-requests 2>/dev/null | grep -q '^i'
 then
