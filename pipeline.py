@@ -199,7 +199,8 @@ class WgetArgs(object):
                              'group',
                              'competition',
                              'challenge',
-                             'badge')
+                             'badge',
+                             'profile')
 
         if item_type == 'blingee':
             for val in xrange(int(item_value), int(item_value)+NUM_BLINGEES):
@@ -209,12 +210,6 @@ class WgetArgs(object):
             wget_args.append("http://blingee.com/stamp/view/{0}".format(item_value))
         elif item_type == 'group':
             wget_args.extend(["--recursive", "--level=inf"])
-            # AFAICT, host*-static only hosts the spotlight blingees;
-            # however, I've only looked at groups.
-            wget_args.append("--exclude-domains=" + "host1-static.blingee.com," +
-                                                    "host2-static.blingee.com," +
-                                                    "host3-static.blingee.com," +
-                                                    "host4-static.blingee.com")
             wget_args.append("http://blingee.com/group/{0}".format(item_value))
             wget_args.append("http://blingee.com/group/{0}/members".format(item_value))
         elif item_type == 'competition':
@@ -226,6 +221,13 @@ class WgetArgs(object):
         elif item_type == 'badge':
             wget_args.append("http://blingee.com/badge/view/{0}".format(item_value))
             wget_args.append("http://blingee.com/badge/winner_list/{0}".format(item_value))
+        elif item_type == 'profile':
+            wget_args.append("http://blingee.com/profile/{0}".format(item_value))
+            wget_args.append("http://blingee.com/profile/{0}/statistics".format(item_value))
+            wget_args.append("http://blingee.com/profile/{0}/circle".format(item_value))
+            wget_args.append("http://blingee.com/profile/{0}/badges".format(item_value))
+            wget_args.append("http://blingee.com/profile/{0}/comments".format(item_value))
+
         else:
             raise Exception('Unknown item')
 

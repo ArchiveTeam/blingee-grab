@@ -44,13 +44,13 @@ check = function(url, parent, verdict)
   elseif not string.match(url, "^https?://") then
     return false
 
-  -- Skip avatars/thumbnails on group frontpage, topics, and managers.
-  -- We do get the avatars from the memberlist as they are fullsize.
-  elseif parent and string.match(url, "%.gif[%?%d]*$") and
+  -- Groups: Skip avatars/thumbnails on group frontpage, topics, and managers.
+  elseif parent and is_resource(url) and
      (string.match(parent["url"], "blingee%.com/group/%d+$") or
       string.match(parent["url"], "blingee%.com/group/%d+-") or
       string.match(parent["url"], "blingee%.com/group/%d+/managers") or
-      string.match(parent["url"], "blingee%.com/group/%d+/topic")) then
+      string.match(parent["url"], "blingee%.com/group/%d+/topic") or
+      string.match(parent["url"], "blingee%.com/group/%d+/member")) then
     return false
 
   -- Groups: Skip other groups and, except for resources, only grab
@@ -82,6 +82,7 @@ check = function(url, parent, verdict)
   elseif string.match(url, "bln%.gs/b/") or
          string.match(url, "^https?://blingee%.com/$") or
          string.match(url, "blingee%.com/about") or
+         string.match(url, "blingee%.com/partner") or
          string.match(url, "blingee%.com/group/%d+/.+page=1$") or
          string.match(url, "[%?&]list_type=409[78]") or
          string.match(url, "blingee%.com/group/%d+/member/") or
@@ -100,6 +101,13 @@ check = function(url, parent, verdict)
          string.match(url, "/join$") or
          string.match(url, "/signup$") or
          string.match(url, "/login$") or
+         string.match(url, "%?page=%d+%?page=%d+") or
+         string.match(url, "blingee%.com/gift/") or
+         string.match(url, "blingee%.com/user_circle/join") or
+         string.match(url, "blingee%.com/user_circle/block_user") or
+         string.match(url, "blingee%.com/profile/.+/spotlight") or
+         string.match(url, "blingee%.com/profile/.+/postcards") or
+         string.match(url, "blingee%.com/profile/.+/challenges") or
          string.match(url, "blingee%.com/goodie_bag") or
          string.match(url, "/add_topic") or
          string.match(url, "/add_post") or
@@ -179,8 +187,43 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     end
   end
 
+  -- Profiles
+  -- Now all the people in their "circle"
+  if string.match(url, "blingee%.com/profile/.+/circle") then
+    local elements = parse_html(html, "div[class='pagination'] a")
+    if elements[#elements] then
+      local partial_url = elements[#elements].attributes["href"]
+      local total_num = string.match(partial_url, "%d+$")
+      if total_num and string.match(partial_url, "page=%d+") then
+        for num=2,total_num do
+          newurl = url .. "?page=" .. num
+          insert(newurl)
+        end
+      end
+    end
+  -- And comments
+  elseif string.match(url, "blingee%.com/profile/.+/comments") then
+    local elements = parse_html(html, "div[class='li2center'] div a")
+    if elements[#elements] then
+      local partial_url = elements[#elements].attributes["href"]
+      local total_num = string.match(partial_url, "%d+$")
+      if total_num and string.match(partial_url, "page=%d+") then
+        for num=2,total_num do
+          newurl = url .. "?page=" .. num
+          insert(newurl)
+        end
+      end
+    end
+  -- Get the avatar
+  elseif string.match(url, "blingee%.com/profile/") then
+    local elements = parse_html(html, "div[class='bigbox'] img")
+    for _,e in ipairs(elements) do
+      newurl = e.attributes["src"]
+      insert(newurl)
+    end
+
   -- Blingees
-  if string.match(url, "blingee%.com/blingee/view/") then
+  elseif string.match(url, "blingee%.com/blingee/view/") then
     -- The way Blingee stores images is odd. A lot of the thumbnails
     -- have very similar urls to the actual image.
     -- This selector gets just the main image, which is in the bigbox div.
