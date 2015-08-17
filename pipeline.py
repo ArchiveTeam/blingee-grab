@@ -77,11 +77,10 @@ def base36_encode(n):
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20150814.01"
+VERSION = "20150816.01"
 USER_AGENT = 'ArchiveTeam'
 TRACKER_ID = 'blingee'
-#TRACKER_HOST = 'tracker.archiveteam.org'
-TRACKER_HOST = 'localhost:9080'
+TRACKER_HOST = 'tracker.archiveteam.org'
 # Number of blingees per item
 NUM_BLINGEES = 100
 # Number of profiles per item

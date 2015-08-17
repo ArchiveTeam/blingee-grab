@@ -1,9 +1,9 @@
 #!/bin/bash
 sudo apt-get update
-if ! dpkg-query -Wf'${Status}' python-requests 2>/dev/null | grep -q '^i'
+if ! pip show requests 2>/dev/null | grep -q 'Version:'
 then
   echo "Installing python-requests"
-  sudo apt-get -y install python-requests
+  sudo pip install requests
 fi
 if ! dpkg-query -Wf'${Status}' python-lxml 2>/dev/null | grep -q '^i'
 then
