@@ -89,7 +89,7 @@ You need Homebrew. Ensure that you have the OS X equivalent of bzip2 installed a
     pip install --upgrade seesaw
     [... pretty much the same as above ...]
 
-**There is a known issue with some packaged versions of rsync. If you get errors during the upload stage, {{REPO_NAME}} will not work with your rsync version.**
+**There is a known issue with some packaged versions of rsync. If you get errors during the upload stage, blinge-grab will not work with your rsync version.**
 
 This supposedly fixes it:
 
@@ -151,4 +151,4 @@ Are you a developer? Help write code for us! Look at our [developer documentatio
 
 ### Other problems
 
-Have an issue not listed here? Join us on IRC and ask! We can be found at irc.efnet.org #{{IRC_CHANNEL}}.
+Have an issue not listed here? Join us on IRC and ask! We can be found at irc.efnet.org #tragedee.

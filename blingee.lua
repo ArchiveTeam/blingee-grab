@@ -36,7 +36,7 @@ end
 
 parse_html = function(file, selector, index)
   index = index or ""
-  local handle = io.popen("python2 ./parse_html.py "..file.." "..selector.." "..index)
+  local handle = io.popen("python ./parse_html.py "..file.." "..selector.." "..index)
   return handle:read("*a")
 end
 
