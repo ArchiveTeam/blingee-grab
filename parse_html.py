@@ -14,14 +14,17 @@ def main():
         index = False
     tries = 0
     html = open(the_file, "r").read()
-    myparser = etree.HTMLParser(encoding="utf-8")
-    tree = etree.HTML(html, parser=myparser)
-    urls = tree.xpath(pattern)
-    if urls and html:
-        if index != False:
-            print tree.xpath(pattern)[int(index)]
+    if html:
+        myparser = etree.HTMLParser(encoding="utf-8")
+        tree = etree.HTML(html, parser=myparser)
+        urls = tree.xpath(pattern)
+        if urls and html:
+            if index != False:
+                print tree.xpath(pattern)[int(index)]
+            else:
+                print tree.xpath(pattern)
         else:
-            print tree.xpath(pattern)
+            print ""
     else:
         print ""
 
