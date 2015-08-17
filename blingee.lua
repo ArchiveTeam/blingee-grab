@@ -2,6 +2,7 @@ dofile("urlcode.lua")
 dofile("table_show.lua")
 pcall(require, "luarocks.loader")
 htmlparser = require("htmlparser")
+require 'io'
 
 local url_count = 0
 local item_type = os.getenv('item_type')
@@ -21,9 +22,24 @@ read_file = function(file)
   end
 end
 
-parse_html = function(html, selector)
-  local root = htmlparser.parse(html)
-  return root(selector)
+line_num = function(linenum, filename)
+  local num = 0
+  for line in io.lines(filename) do
+    num = num + 1
+    if num == linenum then
+      return line
+    end
+  end
+end
+
+trim = function(s)
+  return (s:gsub("^%s*(.-)%s*$", "%1"))
+end
+
+parse_html = function(file, selector, index)
+  index = index or ""
+  local handle = io.popen("python2 ./parse_html.py "..file.." "..selector.." "..index)
+  return handle:read("*a")
 end
 
 is_resource = function(url)
@@ -189,9 +205,8 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
   -- Profiles
   -- Now all the people in their "circle"
   if string.match(url, "blingee%.com/profile/.+/circle") then
-    local elements = parse_html(html, "div[class='pagination'] a")
-    if elements[#elements] then
-      local partial_url = elements[#elements].attributes["href"]
+    local partial_url = trim(parse_html(file, [[//div[@class=\"pagination\"]/a/@href]], -1))
+    if partial_url then
       local total_num = string.match(partial_url, "%d+$")
       if total_num and string.match(partial_url, "page=%d+") then
         for num=2,total_num do
@@ -202,9 +217,8 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     end
   -- And comments
   elseif string.match(url, "blingee%.com/profile/.+/comments") then
-    local elements = parse_html(html, "div[class='li2center'] div a")
-    if elements[#elements] then
-      local partial_url = elements[#elements].attributes["href"]
+    local partial_url = trim(parse_html(file, [[//div[@class=\"li2center\"]//div//a/@href]], -1))
+    if partial_url then
       local total_num = string.match(partial_url, "%d+$")
       if total_num and string.match(partial_url, "page=%d+") then
         for num=2,total_num do
@@ -215,80 +229,60 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     end
   -- Get the avatar
   elseif string.match(url, "blingee%.com/profile/") then
-    local elements = parse_html(html, "div[class='bigbox'] img")
-    for _,e in ipairs(elements) do
-      newurl = e.attributes["src"]
-      insert(newurl)
-    end
+    local newurl = trim(parse_html(file, [[//div[@class=\'bigbox\']//img/@src]], 0))
+    insert(newurl)
 
   -- Blingees
   elseif string.match(url, "blingee%.com/blingee/view/") then
     -- The way Blingee stores images is odd. A lot of the thumbnails
     -- have very similar urls to the actual image.
     -- This selector gets just the main image, which is in the bigbox div.
-    local elements = parse_html(html, "div[class='bigbox'] img")
-    for _,e in ipairs(elements) do
-      newurl = e.attributes["src"]
-      insert(newurl)
-    end
+    local newurl = trim(parse_html(file, [[//div[@class=\'bigbox\']//img/@src]], 0))
+    insert(newurl)
 
   -- Blingee comments
   elseif string.match(url, "blingee%.com/blingee/%d+/comments$") then
-    local elements = parse_html(html, "div[class='li2center'] div a")
     -- The very last url has the total number of comment pages
-    if elements[#elements] then
-      local partial_url = elements[#elements].attributes["href"]
-      local total_num = string.match(partial_url, "%d+$")
-      if total_num and string.match(partial_url, "page=%d+") then
-        for num=2,total_num do
-          newurl = url .. "?page=" .. num
-          insert(newurl)
-        end
+    local partial_url = trim(parse_html(file, [[//div[@class=\'li2center\']//div//a/@href]], -1))
+    local total_num = string.match(partial_url, "%d+$")
+    if total_num and string.match(partial_url, "page=%d+") then
+      for num=2,total_num do
+        newurl = url .. "?page=" .. num
+        insert(newurl)
       end
     end
 
   -- Stamps
   elseif string.match(url, "blingee%.com/stamp/view/") then
-    local elements = parse_html(html, "div[class='bigbox'] img")
-    for _,e in ipairs(elements) do
-      newurl = string.match(e.attributes["style"], "http://[^%)]+")
-      insert(newurl)
-    end
+    local partial_url = trim(parse_html(file, [[//div[@class=\'bigbox\']//img/@style]], 0))
+    newurl = string.match(partial_url, "http?://[^%)]+")
+    insert(newurl)
 
   -- Group urls are found via the --recursive wget flag,
   -- but we do have to add the group logo.
   elseif string.match(url, "blingee%.com/group/%d+$") then
-    local elements = parse_html(html, "div[class='bigbox'] img")
-    for _,e in ipairs(elements) do
-      newurl = e.attributes["src"]
-      insert(newurl)
-    end
+    local elements = trim(parse_html(file, [[//div[@class=\'bigbox\']//img/@src]], 0))
+    insert(newurl)
 
   -- Competition rankings
   elseif string.match(url, "blingee%.com/competition/rankings/%d+$") then
-    local elements = parse_html(html, "div[class='content_section'] a")
-    if elements[#elements] then
-      local partial_url = elements[#elements].attributes["href"]
-      local total_num = string.match(partial_url, "%d+$")
-      if total_num and string.match(partial_url, "page/%d+") then
-        for num=2,total_num do
-          newurl = url .. "/page/" .. num
-          insert(newurl)
-        end
+    local partial_url = trim(parse_html(file, [[//div[@class=\'content_section\']//a/@href]], -1))
+    local total_num = string.match(partial_url, "%d+$")
+    if total_num and string.match(partial_url, "page/%d+") then
+      for num=2,total_num do
+        newurl = url .. "/page/" .. num
+        insert(newurl)
       end
     end
 
   -- Challenge rankings
   elseif string.match(url, "blingee%.com/challenge/rankings/%d+$") then
-    local elements = parse_html(html, "div[class='content_section'] a")
-    if elements[#elements] then
-      local partial_url = elements[#elements].attributes["href"]
-      local total_num = string.match(partial_url, "%d+$")
-      if total_num and string.match(partial_url, "page=%d+") then
-        for num=2,total_num do
-          newurl = url .. "?page=" .. num
-          insert(newurl)
-        end
+    local partial_url = trim(parse_html(file, [[//div[@class=\'content_section\']//a/@href]], -1))
+    local total_num = string.match(partial_url, "%d+$")
+    if total_num and string.match(partial_url, "page=%d+") then
+      for num=2,total_num do
+        newurl = url .. "?page=" .. num
+        insert(newurl)
       end
     end
 
@@ -296,26 +290,22 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
   elseif string.match(url, "blingee%.com/badge/") then
     -- Get the actual badge
     if string.match(url, "/view/%d+$") then
-      local description = parse_html(html, "div[class='description'] p a img")
+      local description = trim(parse_html(file, [[//div[@class=\'description\']//p//a//img/@src]], 0))
       if description then
-        insert("http:" .. description[1].attributes["src"])
+        insert("http:" .. description)
       end
     -- Winner list
     elseif string.match(url, "/winner_list/%d+$") then
-      local elements = parse_html(html, "div[class='pagination'] a")
-      if elements[#elements] then
-        local partial_url = elements[#elements].attributes["href"]
-        local total_num = string.match(partial_url, "%d+$")
-        if total_num and string.match(partial_url, "page=%d+") then
-          for num=2,total_num do
-            newurl = url .. "?page=" .. num
-            insert(newurl)
-          end
+      local partial_url = trim(parse_html(file, [[//div[@class=\'pagination\']//a/@href]], -1))
+      local total_num = string.match(partial_url, "%d+$")
+      if total_num and string.match(partial_url, "page=%d+") then
+        for num=2,total_num do
+          newurl = url .. "?page=" .. num
+          insert(newurl)
         end
       end
     end
   end
-
   return urls
 end
 
@@ -329,45 +319,12 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
   io.stdout:write(url_count .. "=" .. status_code .. " " .. url["url"] .. ".  \n")
   io.stdout:flush()
 
-  if status_code == 302 or status_code == 301 then
-    os.execute("python check302.py '"..url["url"].."'")
-    if io.open("302file", "r") == nil then
-      if string.match(url["url"], item_value) and string.match(url["host"], "blingee%.com") then
-        io.stdout:write("Something went wrong!! ABORTING  \n")
-        io.stdout:flush()
-        return wget.actions.ABORT
-      end
-    end
-    local redirfile = io.open("302file", "r")
-    local fullfile = redirfile:read("*all")
-    local numlinks = 0
-    for newurl in string.gmatch(fullfile, "https?://") do
-      numlinks = numlinks + 1
-    end
-    local foundurl = line_num(2, "302file")
-    if numlinks > 1 then
---      io.stdout:write("Found "..foundurl.." after redirect")
---      io.stdout:flush()
-      if downloaded[foundurl] == true or addedtolist[foundurl] == true then
---        io.stdout:write(", this url has already been downloaded or added to the list to be downloaded, so it is skipped.  \n")
---        io.stdout:flush()
-        redirfile:close()
-        os.remove("302file")
-        return wget.actions.EXIT
-      elseif not string.match(foundurl, "https?://") then
-        if string.match(url["url"], item_value) and string.match(url["host"], "blingee%.com") then
-          io.stdout:write("Something went wrong!! ABORTING  \n")
-          io.stdout:flush()
-          return wget.actions.ABORT
-        end
-      end
-      redirfile:close()
-      os.remove("302file")
---      io.stdout:write(".  \n")
---      io.stdout:flush()
-    end
+  -- Save the url shortener, but stop at the second redirect.
+  if status_code == 302 or status_code == 301 and
+     item_type == "blingee" and string.match(url.url, "^https?://blingee%.com/b/.+") then
+    return wget.actions.EXIT
   end
-  
+
   if status_code >= 500 or
     (status_code >= 400 and status_code ~= 404 and status_code ~= 403) then
 

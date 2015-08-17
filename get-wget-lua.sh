@@ -36,8 +36,6 @@ else
   exit 1
 fi
 
-patch -p0 < ../wget-lua.patch
-
 if ./configure $CONFIGURE_SSL_OPT --disable-nls && make && src/wget -V | grep -q lua
 then
   cp src/wget ../wget-lua

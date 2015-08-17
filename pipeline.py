@@ -53,6 +53,24 @@ WGET_LUA = find_executable(
 if not WGET_LUA:
     raise Exception("No usable Wget+Lua found.")
 
+def base36_encode(n):
+    """
+    Encode integer value `n` using `alphabet`. The resulting string will be a
+    base-N representation of `n`, where N is the length of `alphabet`.
+
+    Copied from https://github.com/benhodgson/basin/blob/master/src/basin.py
+    """
+    alphabet="0123456789abcdefghijklmnopqrstuvwxyz"
+    if not (isinstance(n, int) or isinstance(n, long)):
+        raise TypeError('value to encode must be an int or long')
+    r = []
+    base  = len(alphabet)
+    while n >= base:
+        r.append(alphabet[n % base])
+        n = n / base
+    r.append(str(alphabet[n % base]))
+    r.reverse()
+    return ''.join(r)
 
 ###########################################################################
 # The version number of this pipeline definition.
@@ -210,6 +228,7 @@ class WgetArgs(object):
             for val in xrange(int(item_value), int(item_value)+NUM_BLINGEES):
                 wget_args.append("http://blingee.com/blingee/view/{0}".format(val))
                 wget_args.append("http://blingee.com/blingee/{0}/comments".format(val))
+                wget_args.append("http://bln.gs/b/{0}".format(base36_encode(val)))
         elif item_type == 'stamp':
             wget_args.append("http://blingee.com/stamp/view/{0}".format(item_value))
         elif item_type == 'group':
