@@ -1,7 +1,5 @@
 dofile("urlcode.lua")
 dofile("table_show.lua")
-pcall(require, "luarocks.loader")
-htmlparser = require("htmlparser")
 require 'io'
 
 local url_count = 0
