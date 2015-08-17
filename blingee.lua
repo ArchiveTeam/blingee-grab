@@ -233,12 +233,14 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     insert(newurl)
 
   -- Blingees
-  elseif string.match(url, "blingee%.com/blingee/view/") then
+  elseif string.match(url, "blingee%.com/blingee/view/%d+$") then
     -- The way Blingee stores images is odd. A lot of the thumbnails
     -- have very similar urls to the actual image.
     -- This selector gets just the main image, which is in the bigbox div.
     local newurl = trim(parse_html(file, [[//div[@class=\'bigbox\']//img/@src]], 0))
+    local canonical = "http://blingee.com"..trim(parse_html(file, [[//link[@rel=\'canonical\']/@href]], 0))
     insert(newurl)
+    insert(canonical)
 
   -- Blingee comments
   elseif string.match(url, "blingee%.com/blingee/%d+/comments$") then
