@@ -1,6 +1,6 @@
 #!/bin/bash
 sudo apt-get update
-if ! pip show requests 2>/dev/null | grep -q 'Version:'
+if ! pip search requests 2>/dev/null | grep -q -z1 -Poi "\- Python HTTP for Humans.[\s]*INSTALLED"
 then
   echo "Installing python-requests"
   sudo pip install requests
