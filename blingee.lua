@@ -41,7 +41,12 @@ parse_html = function(file, selector, index)
 end
 
 is_resource = function(url)
-  local patterns = {"%.gif", "%.png", "%.jpe?g", "%.css", "%.js", "%.swf"}
+  local patterns = {"%.gif[%?%d]*$",
+                    "%.png[%?%d]*$",
+                    "%.jpe?g[%?%d]*$",
+                    "%.css[%?%d]*$",
+                    "%.js[%?%d]*$",
+                    "%.swf[%?%d]*$"}
   for _,pattern in ipairs(patterns) do
     if string.match(url, pattern) then
       return true
@@ -180,28 +185,30 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
   end
 
   -- Find various common links.
-  for newurl in string.gmatch(html, '"(https?://[^"]+)"') do
-    insert(match_url(newurl))
-  end
-
-  for newurl in string.gmatch(html, '("/[^"]+)"') do
-    if string.match(newurl, '"//') then
-      insert(match_url(string.gsub(newurl, '"//', 'http://')))
-    elseif not string.match(newurl, '"//') then
-      insert(match_url(string.match(url, "(https?://[^/]+)/")..string.match(newurl, '"(/.+)')))
+  if not is_resource(url) then
+    for newurl in string.gmatch(html, '"(https?://[^"]+)"') do
+      insert(match_url(newurl))
     end
-  end
 
-  for newurl in string.gmatch(html, "('/[^']+)'") do
-    if string.match(newurl, "'//") then
-      insert(match_url(string.gsub(newurl, "'//", "http://")))
-    elseif not string.match(newurl, "'//") then
-      insert(match_url(string.match(url, "(https?://[^/]+)/")..string.match(newurl, "'(/.+)")))
+    for newurl in string.gmatch(html, '("/[^"]+)"') do
+      if string.match(newurl, '"//') then
+        insert(match_url(string.gsub(newurl, '"//', 'http://')))
+      elseif not string.match(newurl, '"//') then
+        insert(match_url(string.match(url, "(https?://[^/]+)/")..string.match(newurl, '"(/.+)')))
+      end
+    end
+
+    for newurl in string.gmatch(html, "('/[^']+)'") do
+      if string.match(newurl, "'//") then
+        insert(match_url(string.gsub(newurl, "'//", "http://")))
+      elseif not string.match(newurl, "'//") then
+        insert(match_url(string.match(url, "(https?://[^/]+)/")..string.match(newurl, "'(/.+)")))
+      end
     end
   end
 
   -- Profiles
-  -- Now all the people in their "circle"
+  -- First, all the people in their "circle"
   if string.match(url, "blingee%.com/profile/.+/circle") then
     local partial_url = trim(parse_html(file, [[//div[@class=\"pagination\"]/a/@href]], -1))
     if partial_url then

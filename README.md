@@ -60,6 +60,8 @@ Distribution-specific setup
 
     adduser --system --group --shell /bin/bash archiveteam
     apt-get update && apt-get install -y git-core libgnutls-dev lua5.1 liblua5.1-0 liblua5.1-0-dev screen python-dev python-pip bzip2 zlib1g-dev python-lxml python-requests
+    # For Debian Jessie:
+    apt-get install libgnutls28-dev
     pip install --upgrade seesaw
     su -c "cd /home/archiveteam; git clone https://github.com/ArchiveTeam/blingee-grab.git; cd blingee-grab; ./get-wget-lua.sh" archiveteam
     screen su -c "cd /home/archiveteam/blingee-grab/; run-pipeline pipeline.py --concurrent 2 --address '127.0.0.1' YOURNICKHERE" archiveteam
