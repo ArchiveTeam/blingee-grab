@@ -72,13 +72,17 @@ check = function(url, parent, verdict)
       string.match(parent["url"], "blingee%.com/group/%d+/member")) then
     return false
 
-  -- Groups: Skip other groups and, except for resources, only grab
-  -- urls that contain item_type.
-  elseif parent and ((string.match(url, "blingee%.com/group/%d+[^%d]*") and
-                      not string.match(url, item_value)) or
-                     (string.match(parent["url"], "/group/") and
-                      not is_resource(url) and
-                      not string.match(url, item_type))) then
+  -- Groups: Except for resources, only grab urls that contain item_type.
+  elseif parent and (item_type == "group" and
+                     string.match(parent["url"], "/group/") and
+                     not is_resource(url) and
+                     not string.match(url, "blingee%.com/group/")) then
+    return false
+
+  -- Groups: Skip other groups.
+  elseif item_type == "group" and
+         string.match(url, "blingee%.com/group/%d+[^%d]*") and
+         not string.match(url, "blingee%.com/group/"..item_value.."/") then
     return false
 
   -- No need to redo badges as we're already grabbing them.
@@ -268,7 +272,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
   -- Group urls are found via the --recursive wget flag,
   -- but we do have to add the group logo.
   elseif string.match(url, "blingee%.com/group/%d+$") then
-    local elements = trim(parse_html(file, [[//div[@class=\'bigbox\']//img/@src]], 0))
+    newurl = trim(parse_html(file, [[//div[@class=\'bigbox\']//img/@src]], 0))
     insert(newurl)
 
   -- Competition rankings

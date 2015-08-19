@@ -5,6 +5,7 @@ http://blingee.com/blingee
 http://blingee.com/challenge
 http://blingee.com/contact_us
 http://blingee.com/faq
+http://blingee.com/group
 http://blingee.com/iepngfix.htc
 http://blingee.com/images/image_background.gif
 http://blingee.com/images/web_ui/adbg.gif
