@@ -37,7 +37,9 @@ end
 parse_html = function(file, selector, index)
   index = index or ""
   local handle = io.popen("python ./parse_html.py "..file.." "..selector.." "..index)
-  return handle:read("*a")
+  local html = handle:read("*a")
+  handle:close()
+  return html
 end
 
 is_resource = function(url)
