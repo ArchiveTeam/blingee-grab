@@ -77,14 +77,23 @@ def base36_encode(n):
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20150819.01"
-USER_AGENT = 'ArchiveTeam'
+VERSION = "20150820.01"
 TRACKER_ID = 'blingee'
 TRACKER_HOST = 'tracker.archiveteam.org'
 # Number of blingees per item
 NUM_BLINGEES = 100
 # Number of profiles per item
 NUM_PROFILES = 10
+
+USER_AGENTS = ['Mozilla/5.0 (Windows NT 6.3; rv:24.0) Gecko/20100101 Firefox/39.0',
+               'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:25.0) Gecko/20100101 Firefox/39.0',
+               'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko',
+               'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)',
+               'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)',
+               'Opera/9.80 (Windows NT 6.0; rv:2.0) Presto/2.12.388 Version/12.16',
+               'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.155 Safari/537.36']
+USER_AGENT = random.choice(USER_AGENTS)
+REQUESTS_HEADERS = {"User-Agent": USER_AGENT, "Accept-Encoding": "gzip"}
 
 ###########################################################################
 # This section defines project-specific tasks.
@@ -187,6 +196,7 @@ class WgetArgs(object):
         wget_args = [
             WGET_LUA,
             "-U", USER_AGENT,
+            "--header", "Accept-Language: en-US,en;q=0.8",
             "-nv",
             "--lua-script", "blingee.lua",
             "-o", ItemInterpolation("%(item_dir)s/wget.log"),
@@ -249,7 +259,8 @@ class WgetArgs(object):
                 sys.stdout.flush()
                 tries = 0
                 while tries < 50:
-                    html = requests.get("http://blingee.com/badge/view/42/user/{0}".format(val))
+                    url = "http://blingee.com/badge/view/42/user/{0}".format(val)
+                    html = requests.get(url, headers=REQUESTS_HEADERS)
                     if html.status_code == 200 and html.text:
                         myparser = etree.HTMLParser(encoding="utf-8")
                         tree = etree.HTML(html.text, parser=myparser)
