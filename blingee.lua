@@ -193,11 +193,11 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
   -- If matched, returns newurl. Else, nil
   match_url = function(newurl)
     -- Get extra, possibly new css/js.
-    if string.match(newurl, "%.css") or string.match(newurl, "%.js") then
+    if string.match(newurl, "%.css[%?%d]*$") or string.match(newurl, "%.js[%?%d]*$") then
       return newurl
     -- I don't think there are any swfs other than for stamps,
     -- but just in case
-    elseif string.match(newurl, "%.swf") then
+    elseif string.match(newurl, "%.swf[%?%d]*$") then
       return newurl
     else
       return nil
