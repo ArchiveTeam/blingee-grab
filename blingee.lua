@@ -65,6 +65,18 @@ check = function(url, parent, verdict)
   elseif not string.match(url, "^https?://") then
     return false
 
+  -- Ignore blingee language options
+  elseif string.match(url, "https?://de%.blingee%.com/") or
+         string.match(url, "https?://es%.blingee%.com/") or
+         string.match(url, "https?://fr%.blingee%.com/") or
+         string.match(url, "https?://it%.blingee%.com/") or
+         string.match(url, "https?://nl%.blingee%.com/") or
+         string.match(url, "https?://pt%.blingee%.com/") or
+         string.match(url, "https?://ru%.blingee%.com/") or
+         string.match(url, "https?://ja%.blingee%.com/") or
+         string.match(url, "https?://ko%.blingee%.com/") then
+    return false
+
   -- Groups: Skip avatars/thumbnails on group frontpage, topics, and managers.
   elseif parent and is_resource(url) and
      (string.match(parent["url"], "blingee%.com/group/%d+$") or
@@ -136,6 +148,8 @@ check = function(url, parent, verdict)
          string.match(url, "/add_topic") or
          string.match(url, "/add_post") or
          string.match(url, "blingee%.com/group/tags/") or
+         string.match(url, "blingee%.com/blingee/tags/") or
+         string.match(url, "blingee%.com/pictures/") or
          string.match(url, "[%?&]lang=") then
     return false
   end
