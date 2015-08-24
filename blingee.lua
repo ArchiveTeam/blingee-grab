@@ -35,11 +35,18 @@ trim = function(s)
 end
 
 parse_html = function(file, selector, index)
-  index = index or ""
-  local handle = io.popen("python ./parse_html.py "..file.." "..selector.." "..index)
-  local html = handle:read("*a")
-  handle:close()
-  return html
+  while true do
+    index = index or ""
+    local handle = io.popen("python ./parse_html.py "..file.." "..selector.." "..index)
+    if handle ~= nil then
+      local html = handle:read("*a")
+      handle:close()
+      return html
+    else
+      io.stdout:write("HTML parsing failed! Trying again...\n")
+      io.stdout:flush()
+    end
+  end
 end
 
 is_resource = function(url)
