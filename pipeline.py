@@ -77,7 +77,7 @@ def base36_encode(n):
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20150824.01"
+VERSION = "20150907.01"
 TRACKER_ID = 'blingee'
 TRACKER_HOST = 'tracker.archiveteam.org'
 # Number of blingees per item
@@ -231,10 +231,15 @@ class WgetArgs(object):
                              'competition',
                              'challenge',
                              'badge',
-                             'profile')
+                             'profile',
+                             '1blingee')
 
-        if item_type == 'blingee':
-            for val in xrange(int(item_value), int(item_value)+NUM_BLINGEES):
+        if 'blingee' in item_type:
+            if item_type == '1blingee':
+                total_blingees = 1
+            elif item_type == 'blingee':
+                total_blingees = NUM_BLINGEES
+            for val in xrange(int(item_value), int(item_value)+total_blingees):
                 wget_args.append("http://blingee.com/blingee/view/{0}".format(val))
                 wget_args.append("http://blingee.com/blingee/{0}/comments".format(val))
                 wget_args.append("http://bln.gs/b/{0}".format(base36_encode(val)))
