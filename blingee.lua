@@ -35,8 +35,11 @@ trim = function(s)
 end
 
 parse_html = function(file, selector, index)
+  index = index or ""
+  -- Make sure file exists.
+  local f = assert(io.open(file, "r"))
+  f:close()
   while true do
-    index = index or ""
     local handle = io.popen("python ./parse_html.py "..file.." "..selector.." "..index)
     if handle ~= nil then
       local html = handle:read("*a")

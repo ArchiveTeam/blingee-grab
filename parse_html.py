@@ -1,8 +1,6 @@
 import sys
 import requests
-import os
 from lxml import etree
-
 
 def main():
     #print sys.argv
@@ -12,8 +10,16 @@ def main():
         index = sys.argv[3]
     else:
         index = False
-    tries = 0
-    html = open(the_file, "r").read()
+    html = ""
+    while True:
+        try:
+            f = open(the_file, "r")
+            html = f.read()
+            f.close()
+            break
+        except EnvironmentError:
+            # Hit the limit of file descriptors, etc.
+            continue
     if html:
         myparser = etree.HTMLParser(encoding="utf-8")
         tree = etree.HTML(html, parser=myparser)
