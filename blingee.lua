@@ -20,6 +20,19 @@ read_file = function(file)
   end
 end
 
+split = function(inputstr, sep)
+   -- https://stackoverflow.com/questions/1426954/split-string-in-lua
+  inputstr = inputstr .. sep
+  if sep == nil then
+    sep = "%s"
+  end
+  local t = {}
+  for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+    table.insert(t, str)
+  end
+ return t
+end
+
 line_num = function(linenum, filename)
   local num = 0
   for line in io.lines(filename) do
@@ -40,11 +53,23 @@ parse_html = function(file, selector, index)
   local f = assert(io.open(file, "r"))
   f:close()
   while true do
-    local handle = io.popen("python ./parse_html.py "..file.." "..selector.." "..index)
+    local handle = io.popen("python ./parse_html.py "..file.." "..selector.." "..index.."; echo $?")
     if handle ~= nil then
       local html = handle:read("*a")
       handle:close()
-      return html
+      local output = split(html, "\n")
+      local matched = output[1]
+      local err = output[2]
+      if matched ~= nil and matched ~= "" and not string.match(matched, "^[\n%d]+$") and err == "0" then
+        if matched == "none" then
+          return ""
+        else
+          return matched
+        end
+      else
+        io.stdout:write("HTML parsing failed! Trying again...\n")
+        io.stdout:flush()
+      end
     else
       io.stdout:write("HTML parsing failed! Trying again...\n")
       io.stdout:flush()

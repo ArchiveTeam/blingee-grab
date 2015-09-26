@@ -26,13 +26,13 @@ def main():
         urls = tree.xpath(pattern)
         if urls and html:
             if index != False:
-                print tree.xpath(pattern)[int(index)]
+                print urls[int(index)]
             else:
-                print tree.xpath(pattern)
+                print urls
         else:
-            print ""
+            print "none"
     else:
-        print ""
+        print "none"
 
 if __name__ == '__main__':
     main()
