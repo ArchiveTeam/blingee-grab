@@ -3,6 +3,7 @@ dofile("table_show.lua")
 require 'io'
 
 local url_count = 0
+local tries = 0
 local item_type = os.getenv('item_type')
 local item_value = os.getenv('item_value')
 
