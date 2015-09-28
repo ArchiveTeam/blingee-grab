@@ -13,7 +13,7 @@ local todo = {}
 read_file = function(file)
   if file then
     local f = assert(io.open(file))
-    local data = f:read("*all")
+    local data = assert(f:read("*all"))
     f:close()
     return data
   else
@@ -56,7 +56,7 @@ parse_html = function(file, selector, index)
   while true do
     local handle = io.popen("python ./parse_html.py "..file.." "..selector.." "..index.."; echo $?")
     if handle ~= nil then
-      local html = handle:read("*a")
+      local html = handle:read("*a") or ""
       handle:close()
       local output = split(html, "\n")
       local matched = output[1]
@@ -394,11 +394,11 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
     io.stdout:write("\nServer returned "..http_stat.statcode..". Sleeping.\n")
     io.stdout:flush()
 
-    os.execute("sleep 10")
+    os.execute("sleep 15")
 
     tries = tries + 1
 
-    if tries >= 6 then
+    if tries >= 8 then
       io.stdout:write("\nI give up...\n")
       io.stdout:flush()
       tries = 0
@@ -411,7 +411,7 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
     io.stdout:write("\nServer returned "..http_stat.statcode..". Sleeping.\n")
     io.stdout:flush()
 
-    os.execute("sleep 10")
+    os.execute("sleep 15")
     
     tries = tries + 1
 
