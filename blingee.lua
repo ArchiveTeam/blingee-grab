@@ -299,9 +299,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     -- have very similar urls to the actual image.
     -- This selector gets just the main image, which is in the bigbox div.
     local newurl = trim(parse_html(file, [[//div[@class=\'bigbox\']//img/@src]], 0))
-    local canonical = "http://blingee.com"..trim(parse_html(file, [[//link[@rel=\'canonical\']/@href]], 0))
     insert(newurl)
-    insert(canonical)
 
   -- Blingee comments
   elseif string.match(url, "blingee%.com/blingee/%d+/comments$") then
@@ -382,10 +380,10 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
   io.stdout:write(url_count .. "=" .. status_code .. " " .. url["url"] .. ".  \n")
   io.stdout:flush()
 
-  -- Save the url shortener, but stop at the second redirect.
+  -- Save the url shortener.
   if (status_code == 302 or status_code == 301) and
      (item_type == "blingee" and string.match(url.url, "^https?://blingee%.com/b/.+")) then
-    return wget.actions.EXIT
+    return wget.actions.NOTHING
 
   elseif status_code >= 500 or
     (status_code >= 400 and status_code ~= 404 and status_code ~= 403) then
