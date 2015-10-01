@@ -55,7 +55,7 @@ parse_html = function(file, selector, index)
   f:close()
   while true do
     local handle = io.popen("python ./parse_html.py "..file.." "..selector.." "..index.."; echo $?")
-    if handle ~= nil then
+    if handle then
       local html = handle:read("*a") or ""
       handle:close()
       local output = split(html, "\n")
@@ -383,12 +383,11 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
   io.stdout:flush()
 
   -- Save the url shortener, but stop at the second redirect.
-  if status_code == 302 or status_code == 301 and
-     item_type == "blingee" and string.match(url.url, "^https?://blingee%.com/b/.+") then
+  if (status_code == 302 or status_code == 301) and
+     (item_type == "blingee" and string.match(url.url, "^https?://blingee%.com/b/.+")) then
     return wget.actions.EXIT
-  end
 
-  if status_code >= 500 or
+  elseif status_code >= 500 or
     (status_code >= 400 and status_code ~= 404 and status_code ~= 403) then
 
     io.stdout:write("\nServer returned "..http_stat.statcode..". Sleeping.\n")
@@ -396,40 +395,38 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
 
     os.execute("sleep 15")
 
-    tries = tries + 1
-
     if tries >= 8 then
       io.stdout:write("\nI give up...\n")
       io.stdout:flush()
       tries = 0
       return wget.actions.ABORT
     else
+      tries = tries + 1
       return wget.actions.CONTINUE
     end
-  elseif status_code == 0 then
 
+  elseif status_code == 0 then
     io.stdout:write("\nServer returned "..http_stat.statcode..". Sleeping.\n")
     io.stdout:flush()
 
     os.execute("sleep 15")
-    
-    tries = tries + 1
 
-    if tries >= 3 then
+    if tries >= 5 then
       io.stdout:write("\nI give up...\n")
       io.stdout:flush()
       tries = 0
       return wget.actions.ABORT
     else
+      tries = tries + 1
       return wget.actions.CONTINUE
     end
   end
 
   tries = 0
 
-  local sleep_time = 0
+  local sleep_time = 0.5 * (math.random(75, 125) / 100.0)
 
-  if sleep_time > 0.001 then
+  if sleep_time >= 0.5 then
     os.execute("sleep " .. sleep_time)
   end
 

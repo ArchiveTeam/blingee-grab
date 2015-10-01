@@ -77,13 +77,13 @@ def base36_encode(n):
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20150927.01"
+VERSION = "20151001.01"
 TRACKER_ID = 'blingee'
 TRACKER_HOST = 'tracker.archiveteam.org'
 # Number of blingees per item
 NUM_BLINGEES = 100
 # Number of profiles per item
-NUM_PROFILES = 10
+NUM_PROFILES = 25
 
 USER_AGENTS = ['Mozilla/5.0 (Windows NT 6.3; rv:24.0) Gecko/20100101 Firefox/39.0',
                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:25.0) Gecko/20100101 Firefox/39.0',
@@ -205,6 +205,7 @@ class WgetArgs(object):
             "--truncate-output",
             "-e", "robots=off",
             "--rotate-dns",
+            "--retry-connrefused",
             "--no-cookies",
             "--no-parent",
             "--timeout", "30",
@@ -259,21 +260,28 @@ class WgetArgs(object):
             wget_args.append("http://blingee.com/badge/view/{0}".format(item_value))
             wget_args.append("http://blingee.com/badge/winner_list/{0}".format(item_value))
         elif item_type == 'profile':
+            profile_parser = etree.HTMLParser(encoding="utf-8")
             for val in xrange(int(item_value), int(item_value)+NUM_PROFILES):
-                print("Getting username for ID {0}...".format(val))
-                sys.stdout.flush()
-                tries = 0
-                while tries < 50:
+                while True:
+                    print("Getting username for ID {0}...".format(val))
+                    sys.stdout.flush()
                     url = "http://blingee.com/badge/view/42/user/{0}".format(val)
                     html = requests.get(url, headers=REQUESTS_HEADERS)
-                    if html.status_code == 200 and html.text:
-                        myparser = etree.HTMLParser(encoding="utf-8")
-                        tree = etree.HTML(html.text, parser=myparser)
+                    status_code = html.status_code
+
+                    if status_code == 200 and html.text:
+                        tree = etree.HTML(html.text, parser=profile_parser)
                         links = tree.xpath('//div[@id="badgeinfo"]//a/@href')
                         username = [link for link in links if "/profile/" in link]
                         if not username:
-                            print("Skipping deleted/private profile.")
-                            break
+                            if "Oops, Error" in html.text:
+                                print("Skipping deleted/private/nonexistent profile.")
+                                sys.stdout.flush()
+                                break
+                            else:
+                                print("Status code is 200, but couldn't find username! Sleeping.")
+                                sys.stdout.flush()
+                                time.sleep(5)
                         else:
                             username = username[0]
                             wget_args.append("http://blingee.com{0}".format(username))
@@ -285,10 +293,10 @@ class WgetArgs(object):
                             sys.stdout.flush()
                             break
                     else:
-                        print("Got status code {0}, sleeping...".format(html.status_code))
+                        print("Got status code {0}. Sleeping.".format(html.status_code))
                         sys.stdout.flush()
                         time.sleep(5)
-                        tries += 1
+                    time.sleep(1)
 
         else:
             raise Exception('Unknown item')
