@@ -244,3 +244,6 @@ http://blingee.com/stylesheets/ratings.css?1341491499
 http://connect.facebook.net/en_US/all.js
 http://edge.quantserve.com/quant.js
 http://image.blingee.com/x%A0%18%01Lg%9A2%A2.js%01%14%7C,%C9;%98%AC%60%25%C5I%C8%05P%E6;Mn2%255%E0%03%93p%135L%BEG%08.%FF
+http://blingee.com/stylesheets/ratings.css?1443814338
+http://blingee.com/stylesheets/blingee_v2.css?1443814338
+http://blingee.com/javascripts/all_min.js?1443814305
